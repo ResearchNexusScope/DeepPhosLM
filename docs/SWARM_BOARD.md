@@ -40,3 +40,5 @@ Gate order per D: VERIFY (mother, tools/verify_review_register.py) → CRITIC (r
 **[15 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-012 Kaplan-Meier survival analysis - UPHELD)**
 
 **[16 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-013 inconsistent numbers / sample counts - UPHELD)**
+
+**[17 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-014 overstated translational claims - UPHELD)**
