@@ -18,3 +18,5 @@ Gate order per D: VERIFY (mother, tools/verify_review_register.py) → CRITIC (r
 **[4 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-001 task definition / kinase-substrate contradiction - UPHELD)**
 
 **[5 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-002 dataset composition, negatives, class ratio - UPHELD)**
+
+**[6 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-003 window-level split / data leakage - UPHELD)**
