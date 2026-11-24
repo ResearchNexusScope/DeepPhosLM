@@ -28,3 +28,5 @@ Gate order per D: VERIFY (mother, tools/verify_review_register.py) → CRITIC (r
 **[9 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-006 methods clarity / pipeline reconstruction - UPHELD)**
 
 **[10 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-007 ProtBERT role / PLM isolation claim - UPHELD)**
+
+**[11 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-008 3D structural data never fed to model - UPHELD)**
