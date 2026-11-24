@@ -1,0 +1,34 @@
+# Exact runtime versions observed in the development environment.
+# Python: 3.14.7
+# Generated: 2026-11-24
+# Command used to observe installed versions (read-only; no installs, no builds):
+#   python -c "import importlib.metadata as m; ps=['numpy','pandas','scikit-learn','scipy','torch','requests','matplotlib','pymupdf','pytest','shap']; print('\n'.join(f'{p}=={m.version(p)}' for p in ps))"
+# Install with: python -m pip install -r requirements.lock.txt
+#
+# Notes on packages NOT pinned here (do not fabricate versions that cannot be verified):
+#   - lifelines, umap-learn, biopython: checked via importlib.metadata and direct
+#     import; NOT installed here and NOT used by the real-experiment path (src/, tools/).
+#     They belong to the legacy notebook pipeline and are intentionally omitted.
+#   - seaborn is installed here (verified: 0.13.2) but is imported only by legacy
+#     modules (evaluate.py, finalised_application.py, visualization_engine.py), not
+#     by the real-experiment path (src/, tools/); it is not part of that toolchain,
+#     so it is intentionally not pinned here.
+#   - torchvision is NOT installed here (no distribution metadata found) and is
+#     imported only by legacy code (it appears in the legacy pip-install line in
+#     README.md, not in any real-experiment module); no version can be verified,
+#     so it is intentionally not pinned here.
+#   - pymupdf is installed/verified but is not imported by the real-experiment tools;
+#     it is pinned because it is part of the documented toolchain.
+#   - scipy is a direct runtime dependency of scikit-learn / shap and is pinned for
+#     full reproducibility of the real experiment.
+
+numpy==2.5.3
+pandas==3.0.6
+scikit-learn==1.9.1
+scipy==1.18.1
+torch==2.14.0
+requests==2.34.2
+matplotlib==3.11.2
+pymupdf==1.28.2
+pytest==9.1.1
+shap==0.52.0
