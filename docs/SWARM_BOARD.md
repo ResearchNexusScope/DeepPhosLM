@@ -32,3 +32,5 @@ Gate order per D: VERIFY (mother, tools/verify_review_register.py) → CRITIC (r
 **[11 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-008 3D structural data never fed to model - UPHELD)**
 
 **[12 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-009 XAI method missing - PARTIALLY UPHELD)**
+
+**[13 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-010 feature-ablation evidence - PARTIALLY UPHELD)**
