@@ -56,3 +56,5 @@ Gate order per D: VERIFY (mother, tools/verify_review_register.py) → CRITIC (r
 **[23 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (F-003 honest metrics + per-S/T/Y + bootstrap CI; VERIFY 22 tests green, CRITIC PASS)**
 
 **[24 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (F-004 same-split LR/RF baselines with honest no-SOTA scope; VERIFY 32 tests green, CRITIC PASS)**
+
+**[25 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (F-005 figures from results; simulated survival removed; legacy path/duplicate defects fixed; VERIFY 36 tests green, CRITIC PASS)**

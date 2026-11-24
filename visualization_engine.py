@@ -15,13 +15,6 @@ try:
 except ImportError:
     shap = None
 
-try:
-    import lifelines
-    from lifelines import KaplanMeierFitter, CoxPHFitter
-    from lifelines.statistics import logrank_test
-except ImportError:
-    lifelines = None
-
 # Kinase Superfamily Map for simplified confusion matrix
 SUPERFAMILY_MAP = {
     'ABL1': 'TK', 'AKT1': 'AGC', 'ATM': 'Atypical', 'ATR': 'Atypical',
@@ -33,6 +26,23 @@ SUPERFAMILY_MAP = {
     'TGFBR1': 'TKL'
 }
 
+
+def resolve_kinase_index(fams, kinase):
+    """Return the column index of ``kinase`` in ``fams``, or raise ``KeyError``.
+
+    Replaces former hard-coded numeric index defaults: guessing an index
+    silently attributes a score to the wrong kinase, so an absent kinase is
+    now an explicit error rather than a plausible-looking number.
+    """
+    matches = np.flatnonzero(np.asarray(fams) == kinase)
+    if matches.size == 0:
+        raise KeyError(
+            f"Kinase {kinase!r} is not present in the supplied kinase list; "
+            "no guessed index is used."
+        )
+    return int(matches[0])
+
+
 # ----------------------------------------------------
 # Dashboard 1: Model Comparison (Ablation, Radar, CD)
 # ----------------------------------------------------
@@ -43,7 +53,7 @@ def plot_model_comparison(metrics_dict, save_path=None):
     metrics_dict should map variant names to lists/arrays of metric values across folds.
     Example:
     metrics_dict = {
-        'Combined (Seq+Coord)': {'Accuracy': [...], 'F1-Macro': [...], 'AUC-Macro': [...]},
+        'Combined (Seq+Embedding)': {'Accuracy': [...], 'F1-Macro': [...], 'AUC-Macro': [...]},
         ...
     }
     """
@@ -345,10 +355,11 @@ def plot_grouped_confusion_matrix(y_test, y_score, fams, save_path=None):
 class PyTorchModelWrapper(object):
     """
     Wrapper for SHAP because the PyTorch model takes two distinct inputs:
-    motif (batch, 22, 15) and coords (batch, 100).
+    motif (batch, 22, 15) and siamese_embedding (batch, 100).
     The wrapper accepts a single concatenated tensor of shape (batch, 430),
     unpacks them, runs the model, and returns output predictions.
     """
+    # 'seq-coord' is the model API's version token, not a coordinate variable.
     def __init__(self, model, device, version='seq-coord'):
         self.model = model
         self.device = device
@@ -361,11 +372,11 @@ class PyTorchModelWrapper(object):
         
         # Split features back
         motif_flat = x_tensor[:, :330]
-        coords = x_tensor[:, 330:]
+        siamese_embedding = x_tensor[:, 330:]
         motif = motif_flat.view(-1, 22, 15)
         
         with torch.no_grad():
-            preds = self.model(motif, coords, self.version)
+            preds = self.model(motif, siamese_embedding, self.version)
         return preds.cpu().numpy()
 
 def compute_and_plot_shap(model, val_loader, device, save_path_summary=None, save_path_positional=None):
@@ -377,7 +388,7 @@ def compute_and_plot_shap(model, val_loader, device, save_path_summary=None, sav
         return
         
     # Gather a batch of background samples and test samples
-    inputs_list, coords_list = [], []
+    inputs_list = []
     for inputs, labels in val_loader:
         # Unpack input tensor (first 330 are motif, last 100 are Siamese embeddings)
         inputs_list.append(inputs.numpy())
@@ -408,10 +419,10 @@ def compute_and_plot_shap(model, val_loader, device, save_path_summary=None, sav
     
     # 1. Feature Importance Summary: Sequence vs structure
     seq_importance = mean_abs_shap[:330].sum()
-    coord_importance = mean_abs_shap[330:].sum()
+    embedding_importance = mean_abs_shap[330:].sum()
     
     plt.figure(figsize=(6, 4))
-    bars = plt.bar(['15-mer Sequence Motif', '3D Siamese Coordinates'], [seq_importance, coord_importance], 
+    bars = plt.bar(['15-mer Sequence Motif', 'Siamese embedding'], [seq_importance, embedding_importance], 
             color=['#2b5c8f', '#d95f02'], edgecolor='black', width=0.5, alpha=0.9)
     plt.ylabel('Sum of Mean Absolute SHAP values', fontsize=11)
     plt.title('Feature Group Importance Summary (Ablation)', fontsize=12, fontweight='bold', pad=10)
@@ -451,123 +462,13 @@ def compute_and_plot_shap(model, val_loader, device, save_path_summary=None, sav
     plt.show()
 
 # ----------------------------------------------------
-# Dashboard 4: Downstream Clinical Translation
+# Removed: a former "clinical translation" dashboard that fabricated patient
+# time-to-event endpoints from kinase scores and analysed them as if real.
+# This project has no clinical cohort or follow-up data, so that dashboard was
+# deleted entirely. No simulated clinical data is produced anywhere here.
+# Any kinase lookup now goes through resolve_kinase_index(), which raises
+# explicitly rather than guessing an index.
 # ----------------------------------------------------
-
-def generate_survival_simulation_data(y_score, fams):
-    """
-    Robust clinical survival simulator.
-    Maps predicted probabilities of EGFR, AKT1, and MTOR/SRC to simulated patient cohorts.
-    High predicted activity is modeled as high-risk, yielding shorter survival times.
-    """
-    num_samples = y_score.shape[0]
-    
-    # Extract predicted risk factors
-    egfr_idx = np.where(fams == 'EGFR')[0][0] if 'EGFR' in fams else 11 # fallback
-    akt_idx = np.where(fams == 'AKT1')[0][0] if 'AKT1' in fams else 1  # fallback
-    src_idx = np.where(fams == 'SRC')[0][0] if 'SRC' in fams else 23  # fallback
-    
-    egfr_prob = y_score[:, egfr_idx]
-    akt_prob = y_score[:, akt_idx]
-    src_prob = y_score[:, src_idx]
-    
-    # Base survival time lambda0
-    lambda_0 = 0.05
-    
-    # Exponential hazard model: risk = exp(2.0*EGFR + 1.5*AKT1 + 1.0*SRC)
-    risk_score = 2.0 * egfr_prob + 1.5 * akt_prob + 1.0 * src_prob
-    hazard = np.exp(risk_score)
-    
-    # Generate survival times using hazard rates
-    np.random.seed(666)
-    survival_times = np.random.exponential(scale=1.0 / (lambda_0 * hazard))
-    
-    # Scale times to standard patient months (e.g. 0 to 120 months)
-    survival_times = np.clip(survival_times * 3.5, 1, 120)
-    
-    # Apply random censoring (e.g. 25% of patients survive past follow-up or exit early)
-    censor_prob = 0.25
-    event_observed = np.random.binomial(n=1, p=1-censor_prob, size=num_samples)
-    
-    df = pd.DataFrame({
-        'EGFR_prob': egfr_prob,
-        'AKT1_prob': akt_prob,
-        'SRC_prob': src_prob,
-        'Survival_Months': survival_times,
-        'Observed_Event': event_observed,
-        'Hazard_Score': risk_score
-    })
-    
-    return df
-
-def plot_survival_dashboard(y_score, fams, save_path_km=None, save_path_cox=None):
-    """
-    Runs Kaplan-Meier survival curves and Cox Proportional Hazards forest plots.
-    """
-    if lifelines is None:
-        print("[Warning] lifelines library is not installed. Skipping Survival dashboards.")
-        return
-        
-    df = generate_survival_simulation_data(y_score, fams)
-    
-    # Group cohort into High Risk vs. Low Risk based on median Hazard Score
-    median_risk = df['Hazard_Score'].median()
-    high_risk_mask = df['Hazard_Score'] >= median_risk
-    
-    # 1. Kaplan-Meier Survival Curves
-    kmf_high = KaplanMeierFitter()
-    kmf_low = KaplanMeierFitter()
-    
-    fig, ax = plt.subplots(figsize=(8, 6))
-    
-    kmf_high.fit(df.loc[high_risk_mask, 'Survival_Months'], 
-                 df.loc[high_risk_mask, 'Observed_Event'], 
-                 label='High Predicted Phosphorylation Activity (High Risk)')
-    kmf_low.fit(df.loc[~high_risk_mask, 'Survival_Months'], 
-                df.loc[~high_risk_mask, 'Observed_Event'], 
-                label='Low Predicted Phosphorylation Activity (Low Risk)')
-    
-    kmf_high.plot_survival_function(ax=ax, color='#e41a1c', linewidth=2.0, alpha=0.9)
-    kmf_low.plot_survival_function(ax=ax, color='#377eb8', linewidth=2.0, alpha=0.9)
-    
-    # Run Log-Rank statistical test
-    results = logrank_test(df.loc[high_risk_mask, 'Survival_Months'],
-                           df.loc[~high_risk_mask, 'Survival_Months'],
-                           df.loc[high_risk_mask, 'Observed_Event'],
-                           df.loc[~high_risk_mask, 'Observed_Event'])
-    
-    ax.set_xlabel('Timeline (Months)', fontsize=12, labelpad=10)
-    ax.set_ylabel('Survival Probability', fontsize=12, labelpad=10)
-    ax.set_title('Kaplan-Meier Survival Estimation by Predicted Kinase Risk Cohorts', fontsize=13, fontweight='bold', pad=15)
-    ax.grid(True, linestyle='--', alpha=0.5)
-    
-    # Annotate log-rank p-value
-    ax.text(10, 0.2, f"Log-Rank p-value: {results.p_value:.3e}\nChisq = {results.test_statistic:.2f}", 
-            fontsize=11, fontweight='bold', bbox=dict(facecolor='white', alpha=0.8, edgecolor='grey'))
-    
-    plt.tight_layout()
-    if save_path_km:
-        os.makedirs(os.path.dirname(save_path_km), exist_ok=True)
-        plt.savefig(save_path_km, dpi=300)
-    plt.show()
-    
-    # 2. Cox Proportional Hazards Forest Plot
-    # Select our predicted kinase probabilities as risk factors
-    cph_df = df[['EGFR_prob', 'AKT1_prob', 'SRC_prob', 'Survival_Months', 'Observed_Event']]
-    
-    cph = CoxPHFitter()
-    cph.fit(cph_df, duration_col='Survival_Months', event_col='Observed_Event')
-    
-    plt.figure(figsize=(8, 4))
-    cph.plot()
-    plt.title('Multivariate Cox Proportional Hazards Model (Kinase Biomarkers)', fontsize=13, fontweight='bold', pad=15)
-    plt.xlabel('Log Hazard Ratio (Coefficient)', fontsize=11, labelpad=10)
-    
-    plt.tight_layout()
-    if save_path_cox:
-        os.makedirs(os.path.dirname(save_path_cox), exist_ok=True)
-        plt.savefig(save_path_cox, dpi=300)
-    plt.show()
 
 def generate_metrics_table(metrics_harvest, save_path=None):
     """

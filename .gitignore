@@ -20,3 +20,4 @@ MODELS_siam/
 
 # Generated experiment outputs (regenerate from code)
 results/
+figures/
