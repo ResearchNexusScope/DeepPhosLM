@@ -30,3 +30,5 @@ Gate order per D: VERIFY (mother, tools/verify_review_register.py) → CRITIC (r
 **[10 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-007 ProtBERT role / PLM isolation claim - UPHELD)**
 
 **[11 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-008 3D structural data never fed to model - UPHELD)**
+
+**[12 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-009 XAI method missing - PARTIALLY UPHELD)**
