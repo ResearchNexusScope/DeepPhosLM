@@ -21,3 +21,6 @@ MODELS_siam/
 # Generated experiment outputs (regenerate from code)
 results/
 figures/
+
+# Downloaded third-party binaries (fetch + hash-verify via tools/fetch_mmseqs.py)
+tools/bin/
