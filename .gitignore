@@ -17,3 +17,6 @@ MODELS_siam/
 # Test and log artifacts
 .pytest_cache/
 *.log
+
+# Generated experiment outputs (regenerate from code)
+results/

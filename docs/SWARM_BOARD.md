@@ -50,3 +50,5 @@ Gate order per D: VERIFY (mother, tools/verify_review_register.py) → CRITIC (r
 **[20 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-017 reproducibility, provenance, generalisation - UPHELD)**
 
 **[21 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (F-001 honest dataset + leakage-free cluster split; VERIFY 9 tests green, CRITIC PASS)**
+
+**[22 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (F-002 honest binary phosphosite model; VERIFY 14 tests green, CRITIC PASS)**
