@@ -34,3 +34,5 @@ Gate order per D: VERIFY (mother, tools/verify_review_register.py) → CRITIC (r
 **[12 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-009 XAI method missing - PARTIALLY UPHELD)**
 
 **[13 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-010 feature-ablation evidence - PARTIALLY UPHELD)**
+
+**[14 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-011 UMAP / logo / network overinterpretation - UPHELD)**
