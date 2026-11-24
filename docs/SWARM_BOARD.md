@@ -72,3 +72,5 @@ Gate order per D: VERIFY (mother, tools/verify_review_register.py) → CRITIC (r
 **[31 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (E-005 real figures + REAL_RESULTS.md + 141 derived claims; VERIFY 82 tests green, validation with claims GREEN, 153 PASS/0 FAIL doc check, CRITIC PASS after artifact re-audit)**
 
 **[32 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (X-005 pinned environment + executable reproduction chain; VERIFY 87 tests green, CRITIC PASS after circular-gate fix)**
+
+**[33 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (X-002 split-threshold sensitivity 0.2/0.3/0.4 all OK, stable ROC-AUC; VERIFY 104 tests green, CRITIC PASS)**
