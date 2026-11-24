@@ -62,3 +62,5 @@ Gate order per D: VERIFY (mother, tools/verify_review_register.py) → CRITIC (r
 **[26 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (F-006 revised manuscript in Drive; all unsupported claims removed, numbers regenerated; CRITIC PASS, final VERIFY 36 tests green)**
 
 **[27 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (E-001 real PhosphoSite+UniProt dataset: 233,329 windows from 3,113 proteins with residue validation; VERIFY 56 tests green, CRITIC PASS)**
+
+**[28 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (E-002 real MMseqs2 30% whole-cluster split: 2,118 clusters, 188k/23.6k/21.3k windows, zero overlap; VERIFY 63 tests green, CRITIC PASS)**
