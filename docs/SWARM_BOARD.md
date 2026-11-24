@@ -76,3 +76,5 @@ Gate order per D: VERIFY (mother, tools/verify_review_register.py) → CRITIC (r
 **[33 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (X-002 split-threshold sensitivity 0.2/0.3/0.4 all OK, stable ROC-AUC; VERIFY 104 tests green, CRITIC PASS)**
 
 **[34 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (X-003 pos_weight imbalance handling; 10 real runs, ranking unchanged; VERIFY 104 tests green, CRITIC PASS)**
+
+**[35 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (X-004 BCa + bin-level reliability; BCa delta -0.0092 CI [-0.0120,-0.0065]; VERIFY 104 tests green, CRITIC PASS)**
