@@ -8,4 +8,12 @@ __pycache__/
 *.pyc
 .DS_Store
 
-# Local outputs and figures
+# Generated model outputs and figures (rebuild from code + data)
+FIGS_multiclass/
+FIGS_siam/
+MODELS_multiclass/
+MODELS_siam/
+
+# Test and log artifacts
+.pytest_cache/
+*.log
