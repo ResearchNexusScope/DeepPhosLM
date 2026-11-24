@@ -44,3 +44,5 @@ Gate order per D: VERIFY (mother, tools/verify_review_register.py) → CRITIC (r
 **[17 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-014 overstated translational claims - UPHELD)**
 
 **[18 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-015 novelty and scientific focus - UPHELD)**
+
+**[19 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-016 writing, figures, terminology, numbering - UPHELD)**
