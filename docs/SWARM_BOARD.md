@@ -14,3 +14,5 @@ authoritative register with reasoning and file:line evidence from the code-avail
 **[3 | 2026-11-24] REQUEST → critic — yoga/opencode (Per-D Critic gate on D-001..D-017)**
 Gate order per D: VERIFY (mother, tools/verify_review_register.py) → CRITIC (read-only) → COMMIT
 (one commit per D). No worker builds or commits.
+
+**[4 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-001 task definition / kinase-substrate contradiction - UPHELD)**
