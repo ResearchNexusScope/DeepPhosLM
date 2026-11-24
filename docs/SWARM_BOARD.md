@@ -54,3 +54,5 @@ Gate order per D: VERIFY (mother, tools/verify_review_register.py) → CRITIC (r
 **[22 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (F-002 honest binary phosphosite model; VERIFY 14 tests green, CRITIC PASS)**
 
 **[23 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (F-003 honest metrics + per-S/T/Y + bootstrap CI; VERIFY 22 tests green, CRITIC PASS)**
+
+**[24 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (F-004 same-split LR/RF baselines with honest no-SOTA scope; VERIFY 32 tests green, CRITIC PASS)**
