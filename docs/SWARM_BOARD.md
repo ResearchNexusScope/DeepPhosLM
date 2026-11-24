@@ -66,3 +66,5 @@ Gate order per D: VERIFY (mother, tools/verify_review_register.py) → CRITIC (r
 **[28 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (E-002 real MMseqs2 30% whole-cluster split: 2,118 clusters, 188k/23.6k/21.3k windows, zero overlap; VERIFY 63 tests green, CRITIC PASS)**
 
 **[29 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (E-003 real 5-seed dual-ablation training + 5-fold whole-cluster CV; VERIFY 68 tests green, CRITIC PASS after artifact re-audit)**
+
+**[30 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (E-004 independent validator: 10 archives recomputed, row integrity vs test.csv, baselines, ECE, bootstrap, CV; VERIFY 78 tests green, CRITIC PASS after tamper-check fix)**
