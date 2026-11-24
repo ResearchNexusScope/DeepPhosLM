@@ -17,10 +17,11 @@ Honesty rules
 * ``accuracy`` is always reported under that exact name and is never used as a
   stand-in for a discrimination metric.  It is class-prior dominated and the
   caller is warned when the input is single-class.
-* Per-site-type breakdowns are keyed by S/T/Y.  The current real dataset has
-  **no Y-centred positives**: all annotated sites are S- or T-centred, so the
-  Y group is negatives-only and its positive-class metrics are (rightly)
-  undefined.  No Y positive is synthesised to make those numbers appear.
+* Per-site-type breakdowns are keyed by S/T/Y.  A group with only one class
+  (for example a Y group with no positives in a small or toy dataset) returns
+  ``None`` for its undefined positive-class metrics; nothing is synthesised
+  to make those numbers appear.  The real dataset does contain Y-centred
+  positives, so its Y metrics are defined.
 
 Only NumPy and scikit-learn are used.  There are no hard-coded metric values.
 """
@@ -164,8 +165,10 @@ def compute_metrics(
     site_types:
         Optional S/T/Y centre residues, one per row.  When supplied, the
         result also contains ``per_site_type`` with S, T and Y entries (even
-        when a group is empty).  Note that the current real dataset has no
-        Y-centred positives, so Y positive-class metrics are undefined.
+        when a group is empty).  Positive-class metrics are ``None`` for a
+        single-class group (e.g. a Y group with no positives in a small or toy
+        dataset); the real dataset has Y-centred positives, so Y metrics are
+        defined there.
     threshold:
         Probability cutoff used only for the thresholded metrics (accuracy,
         F1, MCC, precision, recall).  ROC-AUC and PR-AUC are threshold-free.
