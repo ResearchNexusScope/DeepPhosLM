@@ -11,7 +11,7 @@ from pathlib import Path
 import re
 import sys
 
-DRIVE = Path(r"C:\Users\sugee\gdrive\My Drive\Research\02 Applied - Journals\Pavithra\Front. Bioinform\DeepPhosLM Protein")
+DRIVE = Path(r"C:\Users\sugee\gdrive\My Drive\Research\pavithra\04 DeepPhosLM Protein")
 REPO = Path(__file__).resolve().parents[1]
 REGISTER = DRIVE / "REVIEW_CRITICISM_REGISTER.md"
 
