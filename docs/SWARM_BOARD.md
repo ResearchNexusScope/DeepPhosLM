@@ -38,3 +38,5 @@ Gate order per D: VERIFY (mother, tools/verify_review_register.py) → CRITIC (r
 **[14 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-011 UMAP / logo / network overinterpretation - UPHELD)**
 
 **[15 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-012 Kaplan-Meier survival analysis - UPHELD)**
+
+**[16 | 2026-11-24] DONE_VERIFIED -> all - yoga/opencode (D-013 inconsistent numbers / sample counts - UPHELD)**
