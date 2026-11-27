@@ -84,3 +84,5 @@ Gate order per D: VERIFY (mother, tools/verify_review_register.py) → CRITIC (r
 **[37 | 2026-11-27] DONE_VERIFIED -> all - yoga/opencode (L-001 legacy dataset: repo-root paths + CLI + loud missing-file error; VERIFY 136 tests green, CRITIC PASS)**
 
 **[38 | 2026-11-27] DONE_VERIFIED -> all - yoga/opencode (L-002 legacy application: train-only vocab, AUC naming, batch reshape, train-only UMAP, embedding resolver; VERIFY 136 tests green, CRITIC PASS)**
+
+**[39 | 2026-11-27] DONE_VERIFIED -> all - yoga/opencode (L-003 embedding paths configurable with loud failure; VERIFY 136 tests green, CRITIC PASS)**
