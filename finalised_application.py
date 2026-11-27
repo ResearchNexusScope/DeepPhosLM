@@ -23,6 +23,48 @@ from IPython.display import Audio
 
 import numpy as np
 
+# --- Generated Siamese embedding artefact ---------------------------------- #
+# MODELS_siam/ is gitignored, so the embedding CSV must be produced by
+# embedder.py (or supplied explicitly) before this script is run.  The default
+# is resolved against the repo root rather than the caller's working directory.
+import argparse
+import os
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent
+EMBEDDING_ENV_VAR = "KINASE_EMBEDDING"
+DEFAULT_EMBEDDING_RELPATH = Path("MODELS_siam") / "LEGACY" / "emb_latest_embedding.csv"
+
+def _embedding_cli_override(argv=None):
+    """Return ``--embedding`` from argv, ignoring unrelated command-line args."""
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--embedding", default=None)
+    args, _unknown = parser.parse_known_args(argv)
+    return args.embedding
+
+def resolve_embedding_path(explicit=None):
+    """Resolve the generated Siamese embedding CSV and fail loudly if absent.
+
+    Override priority: explicit argument > ``--embedding`` CLI flag >
+    ``KINASE_EMBEDDING`` environment variable > the repo-root-relative
+    ``DEFAULT_EMBEDDING_RELPATH``.  Relative overrides are also resolved
+    against the repo root so results do not depend on the working directory.
+    """
+    chosen = explicit or _embedding_cli_override() or os.environ.get(EMBEDDING_ENV_VAR)
+    if chosen:
+        path = Path(chosen).expanduser()
+    else:
+        path = DEFAULT_EMBEDDING_RELPATH
+    if not path.is_absolute():
+        path = REPO_ROOT / path
+    if not path.is_file():
+        raise FileNotFoundError(
+            "Siamese embedding CSV not found at %s. Run embedder.py first or "
+            "pass --embedding / set %s to a generated embedding CSV."
+            % (path, EMBEDDING_ENV_VAR)
+        )
+    return path
+
 train_motifs = np.genfromtxt(r'data/train_motifs.csv', dtype='U')
 train_motifxFamMatrix = np.genfromtxt(r'data/train_motifxFamMatrix.csv', delimiter=',', dtype=int)
 test_motifs = np.genfromtxt(r'data/new_test_motifs.csv', dtype='U')
@@ -43,34 +85,53 @@ def get_gram_seq(motif,gram_length=1):
         gram_seq.append(gram)
     return gram_seq
 
-def get_encoded_motifs(grammed_motifs, all_grams):
-    gram_counts = Counter(all_grams)
-    gram_list = sorted(gram_counts, key=gram_counts.get, reverse=True)
-    gram_to_int = {gram:idx+1 for idx, gram in enumerate(gram_list)}  
-    encoded_motifs = [[gram_to_int[gram] for gram in motif] for motif in grammed_motifs]
+# Token ids are 1-based; id 0 is reserved for padding / unknown tokens.
+UNKNOWN_TOKEN_ID = 0
+
+def get_encoded_motifs(grammed_motifs, all_grams, gram_to_int=None):
+    """Encode grammed motifs using a vocabulary fitted on training grams.
+
+    If ``gram_to_int`` is provided it is reused verbatim (no vocabulary is
+    re-derived from the encoded motifs).  Tokens that were not seen when the
+    vocabulary was fitted map to ``UNKNOWN_TOKEN_ID`` (0) instead of raising
+    a KeyError.  This is how held-out motifs are encoded without letting
+    their tokens leak into the vocabulary.
+    """
+    if gram_to_int is None:
+        gram_counts = Counter(all_grams)
+        gram_list = sorted(gram_counts, key=gram_counts.get, reverse=True)
+        gram_to_int = {gram:idx+1 for idx, gram in enumerate(gram_list)}
+    else:
+        gram_list = sorted(gram_to_int, key=gram_to_int.get)
+    encoded_motifs = [[gram_to_int.get(gram, UNKNOWN_TOKEN_ID) for gram in motif]
+                      for motif in grammed_motifs]
     return encoded_motifs, gram_to_int, gram_list
 
 AMINOS = 'XWGSAELQDMPFTRIHVNCY_K'
 gram_length = 1  # Define the gram length
 
+# The vocabulary is built from TRAIN motifs only.  Test motifs must never
+# contribute tokens here: that would leak held-out data into preprocessing.
 all_grams = []
 train_grammed_motifs = []
 for motif in train_motifs:
     grammed_motif = get_gram_seq(motif,gram_length)
     train_grammed_motifs.append(grammed_motif)
     all_grams.extend(grammed_motif)
-    
+
+# Test motifs are grammed for encoding only; they do NOT extend all_grams.
 test_grammed_motifs = []
 for motif in test_motifs:
     grammed_motif = get_gram_seq(motif,gram_length)
     test_grammed_motifs.append(grammed_motif)
-    all_grams.extend(grammed_motif)
-    
+
 vocab_size = len(set(all_grams))
 print("vocab size:",vocab_size)
 
 train_encoded_motifs, gram_to_int, gram_list = get_encoded_motifs(train_grammed_motifs, all_grams)
-test_encoded_motifs, gram_to_int, gram_list = get_encoded_motifs(test_grammed_motifs, all_grams)
+# Reuse the train-fitted vocabulary: unseen test tokens -> UNKNOWN_TOKEN_ID (0).
+test_encoded_motifs, _, _ = get_encoded_motifs(test_grammed_motifs, all_grams,
+                                               gram_to_int=gram_to_int)
 all_encoded_motifs = train_encoded_motifs + test_encoded_motifs
 def get_random_motif_and_fam(idc):
     mIdx = random.choice(idc)  
@@ -294,7 +355,19 @@ umapper = umap.UMAP(
     metric='euclidean' )
 
 s = time.time()
-pos_umap = umapper.fit_transform(embedded)
+# VISUALISATION-ONLY FIX: UMAP used to be fitted on train+test embeddings
+# together, so held-out points shaped their own projection.  Fit it on the
+# TRAIN embeddings only and TRANSFORM the test embeddings into that space.
+# This changes only the plotted coordinates; the embeddings used as model
+# inputs are not touched.  Keep the train-then-test row order so the existing
+# all_motifs / all_motifxFamMatrix indexing for colours still lines up.
+n_train_embedded = len(train_encoded_motifs)
+train_embedded = embedded[:n_train_embedded]
+test_embedded = embedded[n_train_embedded:]
+umapper.fit(train_embedded)
+train_umap = umapper.transform(train_embedded)
+test_umap = umapper.transform(test_embedded)
+pos_umap = np.vstack([train_umap, test_umap])
 # allDone()
 
 print ("secs: %5.3f" % (time.time()-s))
@@ -423,7 +496,7 @@ folds = proba_mass_split(train_motifxFamMatrix)
 # Get Siamese embedding coords.
 #############################################
 
-embedding = np.genfromtxt(r"MODELS_siam/LEGACY/emb_latest_embedding.csv",delimiter=',',dtype=float)
+embedding = np.genfromtxt(resolve_embedding_path(),delimiter=',',dtype=float)
 train_embedding = embedding[ :len(train_motifs) ]
 test_embedding = embedding[ len(train_motifs): ]
 print(embedding.shape)
@@ -495,10 +568,11 @@ def get_microROC(y_test, y_score):
 def train_model(train_loader, val_loader, model, optimizer, batch_size, num_epochs, stopper='loss', 
                 version='seq-coord', this_loss='phylo'):
     
+    # These track ROC-AUC values (from get_microROC), not accuracy.
     train_losses = []
-    train_accs = []
+    train_aucs = []
     val_losses = []
-    val_accs = []
+    val_aucs = []
     
     running = - math.inf
     current = running
@@ -510,7 +584,7 @@ def train_model(train_loader, val_loader, model, optimizer, batch_size, num_epoc
         print("Epoch",epoch+1)
         for phase in ['train','validate']:
             running_loss = 0.0
-            running_acc = 0.0
+            running_auc = 0.0
             if phase=='train':
                 loader = train_loader
                 model.train()
@@ -521,7 +595,9 @@ def train_model(train_loader, val_loader, model, optimizer, batch_size, num_epoc
             for inputs,labels in loader:
                 inputs = inputs.float().to(device)
                 labels = labels.float().to(device)
-                motif = inputs[:,:-embedding.shape[1]].reshape( batch_size, len(AMINOS), len(train_motifs[0]) )
+                # Use the actual batch length: a partial final batch must not
+                # be reshaped to the global batch_size.
+                motif = inputs[:,:-embedding.shape[1]].reshape( inputs.shape[0], len(AMINOS), len(train_motifs[0]) )
                 coords = inputs[:,-embedding.shape[1]:]
 
                 optimizer.zero_grad()
@@ -539,24 +615,24 @@ def train_model(train_loader, val_loader, model, optimizer, batch_size, num_epoc
 
                 y_test = np.asarray(labels.cpu())
                 y_score = outputs.cpu().detach().numpy()
-                acc = get_microROC(y_test, y_score)
-                running_acc += acc
+                roc_auc = get_microROC(y_test, y_score)
+                running_auc += roc_auc
             
             loss = running_loss / len(loader) 
-            acc =  running_acc / len(loader) 
+            roc_auc =  running_auc / len(loader) 
             
             if phase=='train':
                 train_losses.append(loss)
-                train_accs.append(acc)
+                train_aucs.append(roc_auc)
                 
             elif phase=='validate':
                 val_losses.append(loss)
-                val_accs.append(acc)
+                val_aucs.append(roc_auc)
                 
                 if stopper=='loss':
                     current = -loss
-                elif stopper=='acc':
-                    current = acc
+                elif stopper=='acc':  # legacy keyword; the value below is a ROC-AUC
+                    current = roc_auc
                 elif stopper=='epoch':
                     current = epoch
                 if current >= running:
@@ -564,11 +640,11 @@ def train_model(train_loader, val_loader, model, optimizer, batch_size, num_epoc
                     best_run = epoch+1
                     best_model = copy.deepcopy(model.state_dict()) 
                 
-            print("~ %s LOSS: %5.3f | ACC: %5.3f" % (phase,loss,acc))
+            print("~ %s LOSS: %5.3f | AUC: %5.3f" % (phase,loss,roc_auc))
             if current >= running and phase=='validate':
                 print("      BEST SO FAR ^ ^ ^")
         
-    return (best_run, best_model, train_losses, train_accs, val_losses, val_accs)
+    return (best_run, best_model, train_losses, train_aucs, val_losses, val_aucs)
 def phylo_error(output, target):
         
     weights = np.ones((output.shape[0],output.shape[1]))
@@ -610,9 +686,9 @@ my_reduction = 'sum'
 s = time.time()
 
 all_train_losses = []
-all_train_accs = []
+all_train_aucs = []
 all_val_losses = []
-all_val_accs = []
+all_val_aucs = []
 
 all_best_runs = []
 all_models = []
@@ -631,7 +707,7 @@ for i,fold in enumerate(folds):
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(),lr = my_lr)
     
-    (best_run, best_model, train_losses, train_accs, val_losses, val_accs) = \
+    (best_run, best_model, train_losses, train_aucs, val_losses, val_aucs) = \
                     train_model(train_loader, val_loader,
                                 model, optimizer,my_batch, 
                                 my_epochs,my_stopper,my_version,
@@ -640,9 +716,9 @@ for i,fold in enumerate(folds):
     all_best_runs.append(best_run)
     all_models.append(best_model)
     all_train_losses.append(train_losses)
-    all_train_accs.append(train_accs)
+    all_train_aucs.append(train_aucs)
     all_val_losses.append(val_losses)
-    all_val_accs.append(val_accs)
+    all_val_aucs.append(val_aucs)
     
 print("TIME: %5.3f mins" % ((time.time()-s)/60))
 print("BEST RUNS:",all_best_runs)
@@ -658,15 +734,15 @@ if not os.path.exists("MODELS_multiclass/%s/" % run):
 for i, model_weights in enumerate(all_models):
     torch.save(model_weights, "MODELS_multiclass/%s/%d_weights" % (run, i))
 all_train_losses_arr = np.zeros(my_epochs)
-all_train_accs_arr = np.zeros(my_epochs)
+all_train_aucs_arr = np.zeros(my_epochs)
 all_val_losses_arr = np.zeros(my_epochs)
-all_val_accs_arr = np.zeros(my_epochs)
+all_val_aucs_arr = np.zeros(my_epochs)
 
 for i in range(my_epochs):
     all_train_losses_arr[i] = sum([all_train_losses[j][i] for j in range(len(folds))]) / len(folds)
-    all_train_accs_arr[i] = sum([all_train_accs[j][i] for j in range(len(folds))]) / len(folds)
+    all_train_aucs_arr[i] = sum([all_train_aucs[j][i] for j in range(len(folds))]) / len(folds)
     all_val_losses_arr[i] = sum([all_val_losses[j][i] for j in range(len(folds))]) / len(folds)
-    all_val_accs_arr[i] = sum([all_val_accs[j][i] for j in range(len(folds))]) / len(folds)
+    all_val_aucs_arr[i] = sum([all_val_aucs[j][i] for j in range(len(folds))]) / len(folds)
     
 if my_reduction=='sum':
     all_train_losses_arr=all_train_losses_arr*.005
@@ -679,8 +755,8 @@ plt.figure(figsize=(7.5,5))
 
 plt.plot(all_train_losses_arr,label='Train loss',c='blue')
 plt.plot(all_val_losses_arr,label='Val loss',c='green')
-plt.plot(all_train_accs_arr,label='Train acc',c='red')
-plt.plot(all_val_accs_arr,label='Val acc',c='orange')
+plt.plot(all_train_aucs_arr,label='Train AUC',c='red')
+plt.plot(all_val_aucs_arr,label='Val AUC',c='orange')
 
 plt.xlabel("Epoch")
 plt.legend(loc='center right')
@@ -739,7 +815,7 @@ folds = proba_mass_split(train_motifxFamMatrix)
 # Get Siamese embedding coords.
 #############################################
 
-embedding = np.genfromtxt(r"MODELS_siam/LEGACY/emb_latest_embedding.csv",delimiter=',',dtype=float)
+embedding = np.genfromtxt(resolve_embedding_path(),delimiter=',',dtype=float)
 train_embedding = embedding[ :len(train_motifs) ]
 test_embedding = embedding[ len(train_motifs): ]
 print(embedding.shape)
